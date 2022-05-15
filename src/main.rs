@@ -1,9 +1,8 @@
 use std::fs::File;
-use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::Result;
-use std::io::Write;
+use std::{thread, time};
 
 fn read_file_content(filename: &str) -> Result<String> {
     let file = File::open(filename)?;
@@ -40,8 +39,6 @@ fn print_board(board: Vec<Vec<Vec<i64>>>) {
     for row in board {
         for j in row {
             print!("{:?}\n", j);
-            print!("\r");
-            io::stdout().flush().unwrap();
         }
     }
 }
@@ -168,20 +165,26 @@ fn resolve_maze(board: &mut Vec<Vec<Vec<i64>>>, agent_position: (usize, usize, u
 
     let next_movement = compute_next_movement(board.clone(), agent_position);
 
+    thread::sleep(time::Duration::from_secs(1));
+
     if next_movement == "up" {
         move_agent_up(board, (x - 1, y, z));
+        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x - 1, y, z));
     } else if next_movement == "left" {
         move_agent_left(board, (x, y, z - 1));
+        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x, y, z - 1));
     } else if next_movement == "right" {
         move_agent_right(board, (x, y, z + 1));
+        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x, y, z + 1));
     } else if next_movement == "down" {
         move_agent_down(board, (x + 1, y, z));
+        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x + 1, y, z));
     } else {
@@ -194,8 +197,6 @@ fn main() -> std::io::Result<()> {
     let board = convert_board_to_array(&file_content);
     let mut parsed_board = convert_board_values_to_int(board);
     let start_pos = get_agent_position(&parsed_board);
-    println!("Start position: {:?}\n\n", start_pos);
-    print_board(parsed_board.clone());
 
     resolve_maze(&mut parsed_board, start_pos);
 
