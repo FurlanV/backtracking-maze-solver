@@ -40,11 +40,10 @@ fn print_board(board: Vec<Vec<Vec<i64>>>) {
     for row in board {
         for j in row {
             print!("{:?}\n", j);
+            print!("\r");
+            io::stdout().flush().unwrap();
         }
-        print!("\r");
     }
-    print!("\r");
-    io::stdout().flush().unwrap();
 }
 
 fn get_agent_position(board: &Vec<Vec<Vec<i64>>>) -> (usize, usize, usize) {
@@ -82,7 +81,7 @@ fn is_movement_possible(board: Vec<Vec<Vec<i64>>>, position: (usize, usize, usiz
         return false;
     }
 
-    if board[x][y][z] != 1 {
+    if board[x][y][z] != 1 && board[x][y][z] != 0 {
         return false;
     }
 
@@ -95,18 +94,41 @@ fn compute_next_movement(
 ) -> String {
     let (current_x, current_y, current_z) = current_position;
 
-    let next_up_position = (current_x - 1, current_y, current_z);
-    let next_down_position = (current_x + 1, current_y, current_z);
-    let next_left_position = (current_x, current_y, current_z - 1);
-    let next_right_position = (current_x, current_y, current_z + 1);
+    let mut next_up_position = (current_x, current_y, current_z);
+    let mut next_down_position = (current_x, current_y, current_z);
+    let mut next_left_position = (current_x, current_y, current_z);
+    let mut next_right_position = (current_x, current_y, current_z);
 
-    if is_movement_possible(board.clone(), next_up_position) {
+    if current_x != 0 {
+        next_up_position = (current_x - 1, current_y, current_z);
+    }
+
+    if current_x < board.len() - 1 {
+        next_down_position = (current_x + 1, current_y, current_z);
+    }
+
+    if current_z != 0 {
+        next_left_position = (current_x, current_y, current_z - 1);
+    }
+
+    if current_z < board[current_x][current_y].len() - 1 {
+        next_right_position = (current_x, current_y, current_z + 1);
+    }
+
+    if next_up_position != current_position && is_movement_possible(board.clone(), next_up_position)
+    {
         return "up".to_string();
-    } else if is_movement_possible(board.clone(), next_left_position) {
+    } else if next_left_position != current_position
+        && is_movement_possible(board.clone(), next_left_position)
+    {
         return "left".to_string();
-    } else if is_movement_possible(board.clone(), next_down_position) {
+    } else if next_down_position != current_position
+        && is_movement_possible(board.clone(), next_down_position)
+    {
         return "down".to_string();
-    } else if is_movement_possible(board.clone(), next_right_position) {
+    } else if next_right_position != current_position
+        && is_movement_possible(board.clone(), next_right_position)
+    {
         return "move right".to_string();
     } else {
         return "no movement".to_string();
@@ -139,7 +161,8 @@ fn move_agent_right(board: &mut Vec<Vec<Vec<i64>>>, agent_position: (usize, usiz
 fn resolve_maze(board: &mut Vec<Vec<Vec<i64>>>, agent_position: (usize, usize, usize)) {
     let (x, y, z) = agent_position;
 
-    if board[x][y][z] == 0 {
+    if board[x][y][z] == 0 || x == 0 {
+        println!("You have reached the exit!");
         return;
     }
 
@@ -149,10 +172,6 @@ fn resolve_maze(board: &mut Vec<Vec<Vec<i64>>>, agent_position: (usize, usize, u
         move_agent_up(board, (x - 1, y, z));
         print_board(board.clone());
         resolve_maze(board, (x - 1, y, z));
-    } else if next_movement == "down" {
-        move_agent_down(board, (x + 1, y, z));
-        print_board(board.clone());
-        resolve_maze(board, (x + 1, y, z));
     } else if next_movement == "left" {
         move_agent_left(board, (x, y, z - 1));
         print_board(board.clone());
@@ -161,8 +180,12 @@ fn resolve_maze(board: &mut Vec<Vec<Vec<i64>>>, agent_position: (usize, usize, u
         move_agent_right(board, (x, y, z + 1));
         print_board(board.clone());
         resolve_maze(board, (x, y, z + 1));
+    } else if next_movement == "down" {
+        move_agent_down(board, (x + 1, y, z));
+        print_board(board.clone());
+        resolve_maze(board, (x + 1, y, z));
     } else {
-        return;
+        resolve_maze(board, (x + 1, y, z + 1));
     }
 }
 
