@@ -36,6 +36,7 @@ fn convert_board_values_to_int(board: Vec<Vec<&str>>) -> Vec<Vec<Vec<i64>>> {
 }
 
 fn print_board(board: Vec<Vec<Vec<i64>>>) {
+    print!("{esc}c", esc = 27 as char);
     for row in board {
         for j in row {
             print!("{:?}\n", j);
@@ -67,10 +68,6 @@ fn is_movement_possible(board: Vec<Vec<Vec<i64>>>, position: (usize, usize, usiz
     let z = position.2;
 
     if x > board.len() - 1 {
-        return false;
-    }
-
-    if y > board[x].len() - 1 {
         return false;
     }
 
@@ -119,14 +116,14 @@ fn compute_next_movement(
         && is_movement_possible(board.clone(), next_left_position)
     {
         return "left".to_string();
+    } else if next_right_position != current_position
+        && is_movement_possible(board.clone(), next_right_position)
+    {
+        return "right".to_string();
     } else if next_down_position != current_position
         && is_movement_possible(board.clone(), next_down_position)
     {
         return "down".to_string();
-    } else if next_right_position != current_position
-        && is_movement_possible(board.clone(), next_right_position)
-    {
-        return "move right".to_string();
     } else {
         return "no movement".to_string();
     }
@@ -169,26 +166,22 @@ fn resolve_maze(board: &mut Vec<Vec<Vec<i64>>>, agent_position: (usize, usize, u
 
     if next_movement == "up" {
         move_agent_up(board, (x - 1, y, z));
-        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x - 1, y, z));
     } else if next_movement == "left" {
         move_agent_left(board, (x, y, z - 1));
-        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x, y, z - 1));
     } else if next_movement == "right" {
         move_agent_right(board, (x, y, z + 1));
-        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x, y, z + 1));
     } else if next_movement == "down" {
         move_agent_down(board, (x + 1, y, z));
-        print!("{esc}c", esc = 27 as char);
         print_board(board.clone());
         resolve_maze(board, (x + 1, y, z));
     } else {
-        resolve_maze(board, (x + 1, y, z + 1));
+        return;
     }
 }
 
