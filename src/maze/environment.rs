@@ -4,10 +4,26 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn new(map: Vec<Vec<i64>>, boundaries: (usize, usize)) -> Environment {
+    pub fn new(map: &str) -> Environment {
+        fn read_and_transform_map<'a>(contents: &'a str) -> Vec<Vec<i64>> {
+            contents
+                .split("\n")
+                .map(|x: &str| {
+                    x.chars()
+                        .filter(|x| x.is_digit(10))
+                        .map(|x| x.to_digit(10).unwrap() as i64)
+                        .collect::<Vec<i64>>()
+                })
+                .collect::<Vec<Vec<i64>>>()
+        }
+
+        let parsed_map = read_and_transform_map(map);
+        let x_boundarie = parsed_map.len() - 1;
+        let y_boundarie = parsed_map[x_boundarie].len() - 1;
+
         Environment {
-            map: map,
-            boundaries: boundaries,
+            map: parsed_map,
+            boundaries: (x_boundarie, y_boundarie),
         }
     }
 

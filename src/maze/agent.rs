@@ -8,11 +8,26 @@ pub struct Agent {
 }
 
 impl Agent {
-    pub fn new(current_position: (usize, usize)) -> Self {
+    pub fn new(environment: &Environment) -> Self {
+        fn get_initial_position(board: &Vec<Vec<i64>>) -> (usize, usize) {
+            let mut agent_position = (0, 0);
+            let board_clone = board.clone();
+            for (i, col) in board_clone.iter().enumerate() {
+                for (j, row) in col.iter().enumerate() {
+                    if *row == 2 {
+                        agent_position = (i, j);
+                    }
+                }
+            }
+            agent_position
+        }
+
+        let initial_position = get_initial_position(&environment.map);
+
         Self {
-            current_position: current_position,
-            last_position: (0, 0),
-            next_planned_movement: current_position,
+            current_position: initial_position,
+            last_position: initial_position,
+            next_planned_movement: initial_position,
             n_of_movements: 0,
         }
     }
@@ -31,26 +46,34 @@ impl Agent {
     pub fn evaluate_next_movement(&mut self, environment: &Environment) {
         let (x_boundarie, y_boundarie) = environment.get_map_boundaries();
         let (x, y) = self.current_position;
-        let up = (x - 1, y);
-        let down = (x + 1, y);
-        let left = (x, y - 1);
-        let right = (x, y + 1);
+        let mut decision = false;
 
-        if x > 0 && x < x_boundarie {
+        if x > 0 && !decision {
+            let up = (x - 1, y);
             if self.look(up, &environment) == 1 {
                 self.next_planned_movement = up;
+                decision = true;
             }
-        } else if x > 0 && x < x_boundarie {
-            if self.look(down, &environment) == 1 {
-                self.next_planned_movement = down;
-            }
-        } else if y > 0 && y < y_boundarie {
+        }
+        if y > 0 && !decision {
+            let left = (x, y - 1);
             if self.look(left, &environment) == 1 {
                 self.next_planned_movement = left;
+                decision = true;
             }
-        } else if y > 0 && y < y_boundarie {
+        }
+        if y < y_boundarie && !decision {
+            let right = (x, y + 1);
             if self.look(right, &environment) == 1 {
                 self.next_planned_movement = right;
+                decision = true;
+            }
+        }
+
+        if x < x_boundarie && !decision {
+            let down = (x + 1, y);
+            if self.look(down, &environment) == 1 {
+                self.next_planned_movement = down;
             }
         }
     }
