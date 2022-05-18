@@ -17,7 +17,7 @@ fn read_file_content(filename: &str) -> Result<String> {
     Ok(contents)
 }
 
-fn resolve_maze(environment: &mut Environment, agent: &mut Agent) {
+fn resolve_maze_backtracking(environment: &mut Environment, agent: &mut Agent) {
     if environment.map[agent.current_position.0][agent.current_position.1] == 0 {
         return;
     }
@@ -30,17 +30,15 @@ fn resolve_maze(environment: &mut Environment, agent: &mut Agent) {
     environment.update_map(agent.last_position, agent.current_position);
     environment.print_map_snapshot();
 
-    resolve_maze(environment, agent);
+    resolve_maze_backtracking(environment, agent);
 }
 
 fn main() -> std::io::Result<()> {
-    let file_content = read_file_content("maze.txt")?;
-    //let agent_initial_position = get_agent_position(&parsed_board);
-
-    let mut environment = Environment::new(&file_content);
+    
+    let mut environment = Environment::new_from_file("maze.txt");
     let mut agent = Agent::new(&environment);
 
-    resolve_maze(&mut environment, &mut agent);
+    resolve_maze_backtracking(&mut environment, &mut agent);
 
     Ok(())
 }
