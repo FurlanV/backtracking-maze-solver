@@ -1,21 +1,9 @@
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::io::Result;
 use std::{thread, time};
 
 mod maze;
 
 use maze::agent::Agent;
 use maze::environment::Environment;
-
-fn read_file_content(filename: &str) -> Result<String> {
-    let file = File::open(filename)?;
-    let mut buf_reader = BufReader::new(file);
-    let mut contents = String::new();
-    buf_reader.read_to_string(&mut contents)?;
-    Ok(contents)
-}
 
 fn resolve_maze_backtracking(environment: &mut Environment, agent: &mut Agent) {
     if environment.map[agent.current_position.0][agent.current_position.1] == 0 {
@@ -34,7 +22,7 @@ fn resolve_maze_backtracking(environment: &mut Environment, agent: &mut Agent) {
 }
 
 fn main() -> std::io::Result<()> {
-    
+
     let mut environment = Environment::new_from_file("maze.txt");
     let mut agent = Agent::new(&environment);
 
