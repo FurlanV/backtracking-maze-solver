@@ -1,15 +1,31 @@
+use std::{thread, time};
+
 use super::environment::Environment;
+
+#[derive(PartialEq, Debug)]
+enum MovementPossibilities {
+    MoveUp,
+    MoveDown,
+    MoveLeft,
+    MoveRight,
+    DeadEnd,
+}
+enum SolutionPossibilities {
+    Found,
+    NotFound,
+    Backtrack,
+    NoSolution,
+}
 
 pub struct Agent {
     pub current_position: (usize, usize),
-    pub last_position: (usize, usize),
-    next_planned_movement: (usize, usize),
-    n_of_movements: usize,
+    pub visited_positions: Vec<(usize, usize)>,
+    pub solution_path: Vec<(usize, usize)>,
 }
 
 impl Agent {
     pub fn new(environment: &Environment) -> Self {
-        fn get_initial_position(board: &Vec<Vec<i64>>) -> (usize, usize) {
+        fn get_initial_position(board: &Vec<Vec<usize>>) -> (usize, usize) {
             let mut agent_position = (0, 0);
             let board_clone = board.clone();
             for (i, col) in board_clone.iter().enumerate() {
@@ -26,59 +42,118 @@ impl Agent {
 
         Self {
             current_position: initial_position,
-            last_position: initial_position,
-            next_planned_movement: initial_position,
-            n_of_movements: 0,
+            visited_positions: vec![initial_position],
+            solution_path: vec![initial_position],
         }
     }
 
-    fn look(&self, position: (usize, usize), environment: &Environment) -> i64 {
-        let (x, y) = position;
-        return environment.map[x][y];
+    fn look_around(&mut self, environment: &Environment) -> Vec<MovementPossibilities> {
+        let directions: [(isize, isize); 4] = [(-1, 0), (0, -1), (1, 0), (0, 1)];
+        let mut possibilities = Vec::new();
+
+        for (di, dj) in directions.iter() {
+            let ni = (self.current_position.0 as isize) + di;
+            let nj = (self.current_position.1 as isize) + dj;
+            if ni >= 0
+                && nj >= 0
+                && ni <= environment.get_map_boundaries().0 as isize
+                && nj <= environment.get_map_boundaries().1 as isize
+            {
+                if environment.map[ni as usize][nj as usize] == 3 {
+                    possibilities.push(MovementPossibilities::DeadEnd);
+                } else if environment.map[ni as usize][nj as usize] == 1
+                    || environment.map[ni as usize][nj as usize] == 0
+                {
+                    if (*di as isize, *dj as isize) == (-1, 0) {
+                        possibilities.push(MovementPossibilities::MoveRight);
+                    } else if (*di as isize, *dj as isize) == (0, -1) {
+                        possibilities.push(MovementPossibilities::MoveUp);
+                    } else if (*di as isize, *dj as isize) == (1, 0) {
+                        possibilities.push(MovementPossibilities::MoveLeft);
+                    } else if (*di as isize, *dj as isize) == (0, 1) {
+                        possibilities.push(MovementPossibilities::MoveDown);
+                    }
+                }
+            }
+        }
+
+        possibilities
     }
 
-    pub fn walk(&mut self, position: (usize, usize)) {
-        self.last_position = self.current_position;
-        self.current_position = position;
-        self.n_of_movements += 1;
+    pub fn explore(&mut self, environment: &mut Environment) {
+        let is_solution = self.evaluate_solution(environment);
+
+        match is_solution {
+            Some(SolutionPossibilities::Found) => {
+                println!("Solution found! - {:?}", self.solution_path);
+                return;
+            }
+            Some(SolutionPossibilities::NotFound) => {
+                let path_possibilities: Option<&Vec<(usize, usize)>> =
+                    environment.graph_map.get(&self.current_position);
+
+                let mut next_position = (0, 0);
+
+                for possibility in path_possibilities.unwrap() {
+                    if !self.visited_positions.contains(possibility) {
+                        next_position = *possibility;
+                        break;
+                    }
+                }
+
+                if next_position == (0, 0) {
+                    self.backtrack();
+                } else {
+                    self.visited_positions.push(next_position);
+                    self.current_position = next_position.clone();
+                    self.solution_path.push(self.current_position);
+
+                    environment.update_map(self.current_position, next_position);
+                    thread::sleep(time::Duration::from_millis(500));
+                    environment.print_map_snapshot();
+                }
+            }
+            Some(SolutionPossibilities::Backtrack) => {
+                self.backtrack();
+            }
+            Some(SolutionPossibilities::NoSolution) => {
+                println!("No solution found!");
+                return;
+            }
+            None => {
+                println!("No solution found!");
+                return;
+            }
+        }
+
+        self.explore(environment);
     }
 
-    pub fn evaluate_next_movement(&mut self, environment: &Environment) {
-        let (x_boundarie, y_boundarie) = environment.get_map_boundaries();
-        let (x, y) = self.current_position;
-        let mut decision = false;
+    fn evaluate_solution(&mut self, environment: &Environment) -> Option<SolutionPossibilities> {
+        if environment.finish_coords.contains(&self.current_position){
+            return Some(SolutionPossibilities::Found);
+        } else {
+            let possibilities: Vec<MovementPossibilities> = self.look_around(environment);
+            let mut dead_end: bool = false;
 
-        if x > 0 && !decision {
-            let up = (x - 1, y);
-            if self.look(up, &environment) == 1 {
-                self.next_planned_movement = up;
-                decision = true;
-            }
-        }
-        if y > 0 && !decision {
-            let left = (x, y - 1);
-            if self.look(left, &environment) == 1 {
-                self.next_planned_movement = left;
-                decision = true;
-            }
-        }
-        if y < y_boundarie && !decision {
-            let right = (x, y + 1);
-            if self.look(right, &environment) == 1 {
-                self.next_planned_movement = right;
-                decision = true;
-            }
-        }
+            dead_end = possibilities
+                .iter()
+                .all(|p| *p == MovementPossibilities::DeadEnd);
 
-        if x < x_boundarie && !decision {
-            let down = (x + 1, y);
-            if self.look(down, &environment) == 1 {
-                self.next_planned_movement = down;
+            if dead_end {
+                return Some(SolutionPossibilities::Backtrack);
+            } else {
+                if self.visited_positions.len() == environment.number_of_paths {
+                    return Some(SolutionPossibilities::NoSolution);
+                }
+
+                return Some(SolutionPossibilities::NotFound);
             }
         }
     }
 
-    pub fn get_next_movement(&self) -> (usize, usize) {
-        return self.next_planned_movement;
+    fn backtrack(&mut self) {
+        let last_position = self.solution_path.pop().unwrap();
+        self.current_position = last_position;
     }
 }
