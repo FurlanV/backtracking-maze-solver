@@ -5,7 +5,7 @@ use maze::environment::Environment;
 
 fn main() -> std::io::Result<()> {
 
-    let mut environment = Environment::new_from_file("maze.txt");
+    let mut environment = Environment::new("maze.txt");
     let mut agent = Agent::new(&environment);
 
     agent.explore(&mut environment);

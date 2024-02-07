@@ -13,72 +13,7 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn new(map: &str) -> Environment {
-        fn parse_to_array<'a>(contents: &'a str) -> Vec<Vec<usize>> {
-            contents
-                .split("\n")
-                .map(|x: &str| {
-                    x.chars()
-                        .filter(|x| x.is_digit(10))
-                        .map(|x| x.to_digit(10).unwrap() as usize)
-                        .collect::<Vec<usize>>()
-                })
-                .collect::<Vec<Vec<usize>>>()
-        }
-
-        let parsed_map = parse_to_array(map);
-        let x_boundarie = parsed_map.len() - 1;
-        let y_boundarie = parsed_map[x_boundarie].len() - 1;
-
-        let mut graph_map: HashMap<(usize, usize), Vec<(usize, usize)>> = HashMap::new();
-        let mut n_paths = 0;
-        let mut finish_coords = vec![];
-
-        for (i, row) in parsed_map.iter().enumerate() {
-            for (j, col) in row.iter().enumerate() {
-                let mut neighbors: Vec<(usize, usize)> = vec![];
-
-                if *col == 0 {
-                    finish_coords.push((i, j));
-                }
-
-                if *col == 0  || *col == 1 || *col == 2 {
-                    if i > 0 {
-                        if parsed_map[i - 1][j] == 1 {
-                            neighbors.push((i as usize - 1, j as usize));
-                        }
-                    }
-                    if j > 0 {
-                        if parsed_map[i][j - 1] == 1 {
-                            neighbors.push((i as usize, j as usize - 1));
-                        }
-                    }
-                    if i < x_boundarie as usize {
-                        if parsed_map[i + 1][j] == 1 {
-                            neighbors.push((i as usize + 1, j as usize));
-                        }
-                    }
-                    if j < y_boundarie as usize {
-                        if parsed_map[i][j + 1] == 1 {
-                            neighbors.push((i as usize, j as usize + 1));
-                            n_paths += 1;
-                        }
-                    }
-                    graph_map.insert((i as usize, j as usize), neighbors);
-                }
-            }
-        }
-
-        Environment {
-            map: parsed_map,
-            boundaries: (x_boundarie, y_boundarie),
-            graph_map: graph_map,
-            number_of_paths: n_paths,
-            finish_coords: finish_coords,
-        }
-    }
-
-    pub fn new_from_file(filename: &str) -> Environment {
+    pub fn new(filename: &str) -> Environment {
         fn read_file_content(filename: &str) -> Result<String> {
             let file = File::open(filename)?;
             let mut buf_reader = BufReader::new(file);
